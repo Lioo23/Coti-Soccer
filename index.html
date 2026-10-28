@@ -129,7 +129,8 @@ const sfx={
 // ---------- input ----------
 const keys={};
 window.addEventListener("keydown",e=>{
-  if(e.target&&e.target.tagName==="INPUT"){ // campos de texto (codigo de sala / apodo)
+  if(e.target&&e.target.tagName==="INPUT"&&e.target.style.display==="none"){ e.target.blur(); } // v0.7.1: campo oculto -> teclas al juego
+  else if(e.target&&e.target.tagName==="INPUT"){ // campos de texto (codigo de sala / apodo)
     if(e.target.id==="nick"){ if(["Enter","NumpadEnter","Escape","Tab"].includes(e.code)){e.preventDefault();e.target.blur();} return; }
     if(e.code==="Enter"||e.code==="NumpadEnter"){e.preventDefault();guestJoin(codeInput.value);}
     else if(e.code==="Escape"){e.preventDefault();sfx.click();hideJoinInput();go("online");}
@@ -217,6 +218,7 @@ function applyCancha(i){
 }
 function startMatch(cfg){
   cfg=cfg||{};
+  hideNick(); hideJoinInput(); // v0.7.1: que no quede el campo del apodo arriba del partido
   curCancha=cfg.cancha!=null?cfg.cancha:opts.cancha; matchDur=cfg.dur||opts.dur;
   const c1=cfg.c1!=null?cfg.c1:sel, c2=cfg.c2!=null?cfg.c2:(mode==="local"?sel2:cpuSel);
   applyCancha(curCancha);
@@ -1861,7 +1863,7 @@ const codeInput=(()=>{const i=document.createElement("input");i.id="code";i.maxL
   i.style.cssText="position:fixed;display:none;z-index:5;border:6px solid #4fc3f7;border-radius:20px;text-align:center;font:900 40px 'Arial Black',Impact,sans-serif;text-transform:uppercase;background:#fff;color:#1a1a1a;outline:none;box-sizing:border-box;padding:0";
   i.addEventListener("input",()=>{net.err="";});document.body.appendChild(i);return i;})();
 function openJoin(){net.err="";net.status="";codeInput.value="";go("join");codeInput.style.display="block";placeJoinInput();setTimeout(()=>codeInput.focus(),50);}
-function hideJoinInput(){if(typeof codeInput!=="undefined"&&codeInput.style.display!=="none"){codeInput.style.display="none";codeInput.blur();}}
+function hideJoinInput(){if(typeof codeInput==="undefined")return; if(codeInput.style.display!=="none")codeInput.style.display="none"; if(document.activeElement===codeInput)codeInput.blur();}
 function placeJoinInput(){const r=cv.getBoundingClientRect(),k=r.width/W;Object.assign(codeInput.style,{left:(r.left+CODE_BOX.x*k)+"px",top:(r.top+CODE_BOX.y*k)+"px",width:(CODE_BOX.w*k)+"px",height:(CODE_BOX.h*k)+"px",fontSize:Math.round(46*k)+"px"});}
 function drawJoin(t){
   drawMenuBg(t,0.82);
@@ -2050,7 +2052,7 @@ const nickInput=(()=>{const i=document.createElement("input");i.id="nick";i.maxL
   let tm=0; i.addEventListener("input",()=>{ const v=cleanNick(i.value); if(v!==i.value) i.value=v; opts.nick=v.trim(); saveOpts(); clearTimeout(tm); tm=setTimeout(()=>{ if(net.ready) setMe({name:opts.nick}); },250); });
   i.addEventListener("blur",()=>{ if(net.ready) setMe({name:opts.nick}); });
   document.body.appendChild(i);return i;})();
-function hideNick(){ if(typeof nickInput!=="undefined"&&nickInput.style.display!=="none"){nickInput.style.display="none";nickInput.blur();} }
+function hideNick(){ if(typeof nickInput==="undefined") return; if(nickInput.style.display!=="none") nickInput.style.display="none"; if(document.activeElement===nickInput) nickInput.blur(); }
 function placeNick(){
   if(nickInput.style.display==="none"){nickInput.style.display="block";nickInput.value=opts.nick||"";}
   const r=cv.getBoundingClientRect(),k=r.width/W;
@@ -2575,6 +2577,7 @@ function render(){
     if(loaded>=total){state="menu";}
     return;
   }
+  if(state!=="lobby") hideNick(); if(state!=="join") hideJoinInput(); // v0.7.1
   if(state==="menu"){drawMenu(tAll,rdt);return;}
   if(state==="howto"){drawHowto(tAll);return;}
   if(state==="options"){drawOptions(tAll);return;}
